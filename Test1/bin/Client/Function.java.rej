@@ -1,0 +1,188 @@
+diff a/Test1/src/Client/Function.java b/Test1/src/Client/Function.java	(rejected hunks)
+@@ -5,7 +5,7 @@
+ import java.util.*;
+ 
+ import Login.Member;
+-import Login.FuncDAO;
++
+ 
+ public class Function {
+ 	Connection con =null;
+@@ -13,78 +13,25 @@
+ 	ResultSet rs = null;
+ 	String sql="";
+ 	Scanner sc = new Scanner(System.in);
+-	
+-	public void menuview(String[] args) {
+-		Function fc = new Function();
+-		while(true) {
+-			System.out.println();		
+-			System.out.println("  1. 공개방 만들기   2. 비공개방 만들기   3. 방리스트 보기   4. 대화방 참여");
+-			System.out.println("===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== ===== =====");
+-			System.out.println();
+-			System.out.print("=> 메뉴 : ");
+-			
+-			int key = 0;
+-			try {
+-				key = sc.nextInt();
+-				System.out.println(); // 공백
+-				if(!(key > 0 && key < 5)){ //1~2외의 숫자가 입력되면 예외 강제 발생
+-					throw new InputMismatchException();
+-				}
+-			} catch (InputMismatchException e) {
+-				System.out.println("입력된 값이 잘못되었습니다. [1-5] 메뉴늘 선택해주세요!");
+-				continue;
+-			}
+ 
+-			switch (key) {
+-
+-			case 1:
+-				fc.creatRoom(args);
+-				break;
+-			case 2:
+-				fc.creatPrivateRoom(args);;
+-				break;
+-			case 3:
+-//				fc.deleteMember(); //회원 삭제				
+-				break;	
+-			}
+-			break;
+-		}//end switch()---------------	
+-	}
+ 	
+-	public void creatRoom(String[] args) {
+-		Function fc = new Function();
+-		MultiServer7 ms = new MultiServer7();
+-		System.out.print("=> 타이틀 : ");
+-		String Roomname = sc.nextLine();
+-		System.out.print("=> 정원 : ");
+-		String Roomnum = sc.nextLine();
+-
+-		fc.MultiClient(args);
+-	}
+ 	
+-	public void creatPrivateRoom(String[] args) {
+-		Function fc = new Function();
+-		MultiServer7 ms = new MultiServer7();
+-		System.out.print("=> 타이틀 : ");
+-		String Roomname = sc.nextLine();
+-		System.out.print("=> 정원 : ");
+-		String Roomnum = sc.nextLine();
+-		System.out.print("=> 비밀번호 : ");
+-		String Roompwd = sc.nextLine();
+-
+-		fc.MultiClient(args);
+-	}
+ 	// 로그인
+ 	public void login(String[] args) {
+ 		HashMap<String, String> map = new HashMap<String, String>();
+ 
+-		FuncDAO dao1 = new FuncDAO();
++		FuncDAO dao = new FuncDAO();
+ 		ArrayList<Member> members = new ArrayList<Member>();
+ 		String s_name = null;
+ 		Function fc = new Function();
+ 
+ 		try {
+-			members = dao1.getMembers();
++			con = DriverManager.getConnection(
++					"jdbc:oracle:thin:@localhost:1521:xe",
++					"scott",
++					"tiger");
++			
++			members = dao.getMembers();
+ 
+ 			for (int i = 0; i < members.size(); i++) {
+ 				map.put(members.get(i).getId(), members.get(i).getPwd());
+@@ -111,14 +58,31 @@
+ 					if(!(map.get(id)).equals(pwd)) {
+ 						System.out.println("Password가 일치하지 않습니다. 다시입력해주세요.");
+ 						System.out.println();
+-					} else {
+-						System.out.println("Id와 Password가 일치합니다.");
+-						System.out.println(); // 공백
++					} else {	
++						// 수정 필요
++						sql = "select id from test3";
++						pstmt = con.prepareStatement(sql);
++						rs = pstmt.executeQuery();
++						
++						while(rs.next()) {
++							String a = rs.getString(1);
++							
++//							if(!rs.getString(1).equals(id)) {
++//								System.out.println("Id와 Password가 일치합니다.");
++//								System.out.println(); // 공백
++//								System.out.println();
++//								fc.MultiClient(args);
++//								break;
++//							} else {
++//								System.out.println("접근제한");
++//								break;
++//							}
++						}
+ 						break;
+ 					}
+ 				}
+ 			}
+-			fc.menuview(args);
++			
+ 		} catch (SQLException e) {
+ 			System.out.println("예외 : " + e);
+ 			e.printStackTrace();
+@@ -129,12 +93,6 @@
+ 	}
+ 	
+ 	public void MultiClient(String[] args) {
+-		
+-		System.out.println("   -----*****-----");
+-		System.out.println("닉네임을 설정해주세요.");
+-		System.out.print("=> 닉네임 : ");
+-		String s_name = sc.next();
+-		
+ 		try {
+ 			String ServerIP = "localhost";
+ 			if(args.length > 0) {
+@@ -143,16 +101,20 @@
+ 
+ 			Socket socket = new Socket(ServerIP, 9999); // 소켓 객체 생성
+ 			System.out.println("서버와 연결이 되었습니다......");
+-			
++			System.out.println();
++			System.out.println("   -----*****-----");
++			System.out.println("닉네임을 설정해주세요.");
++			System.out.print(">> 닉네임 : ");
++			String s_name = sc.next();
+ 
+ 			// 서버에서 보내는 메시지를 사용자의 콘솔에 출력하는 쓰레드
+ 			Thread receiver = new Receiver6(socket);
+ 			receiver.start();
+ 
+ 			// 사용자로부터 얻은 문자열을 서버로 전송해주는 역할을 하는 쓰레드
+-			Thread sender = new Sender6(socket, s_name);
+-			sender.start();
+-
++//			Thread sender = new Sender6(socket, s_name);
++//			sender.start();
++			
+ 			new ChatWin(socket, s_name);
+ 		} catch (Exception e) {
+ 			System.out.println("예외[MultiClient class] : " + e);
+@@ -217,10 +179,14 @@
+ 				int updateCount = pstmt.executeUpdate();
+ 
+ 				Function fc = new Function();
+-				int check = fc.confirmId(id);
+ 
+-				if (check != 1) {
+-					System.out.println("가입완료");
++				sql = "select id from test3";
++				pstmt = con.prepareStatement(sql);
++				rs = pstmt.executeQuery();
++				
++				if(rs.next()) {
++					System.out.println();
++					System.out.println("가입이 완료되었습니다.");
+ 					System.out.println();
+ 					fc.login(args);
+ 				}
